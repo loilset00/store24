@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Store24 - Поступления</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:1300px;
+    margin:auto;
+}
+
+.header{
+    background:linear-gradient(135deg,#2563eb,#1e40af);
+    color:white;
+    padding:30px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,.15);
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stat-number{
+    font-size:36px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+input{
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    margin:5px;
+}
+
+button{
+    padding:12px 15px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+    margin:5px;
+}
+
+.add-btn{
+    background:#2563eb;
+}
+
+.edit-btn{
+    background:#f59e0b;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+.back-btn{
+    background:#6b7280;
+}
+
+.table-wrapper{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:12px;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+}
+
+@media(max-width:768px){
+
+    body{
+        padding:10px;
+    }
+
+    input{
+        width:100%;
+        margin-bottom:10px;
+    }
+
+    button{
+        width:100%;
+        margin-bottom:10px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<h1>📥 Поступления товара</h1>
+
+<p>Учёт поставок товаров на склад</p>
+
+<a href="index.html">
+<button class="back-btn">
+← На главную
+</button>
+</a>
+
+</div>
+
+<div class="stats">
+
+<div class="stat-card">
+<div class="stat-number" id="receiptsCount">0</div>
+<div>Поступлений</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-number" id="totalItems">0</div>
+<div>Единиц товара</div>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Добавить поступление</h2>
+
+<input
+type="text"
+id="product"
+placeholder="Товар"
+>
+
+<input
+type="text"
+id="supplier"
+placeholder="Поставщик"
+>
+
+<input
+type="number"
+id="quantity"
+placeholder="Количество"
+>
+
+<input
+type="date"
+id="receiptDate"
+>
+
+<button
+class="add-btn"
+onclick="addReceipt()">
+Добавить поступление
+</button>
+
+</div>
+
+<div class="card">
+
+<input
+type="text"
+id="search"
+placeholder="Поиск по товару"
+onkeyup="loadReceipts()"
+>
+
+</div>
+
+<div class="card">
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+<tr>
+<th>Товар</th>
+<th>Поставщик</th>
+<th>Количество</th>
+<th>Дата</th>
+<th>Действия</th>
+</tr>
+</thead>
+
+<tbody id="receiptsTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+doc,
+deleteDoc,
+updateDoc
+}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
+  authDomain: "store24-5c657.firebaseapp.com",
+  projectId: "store24-5c657",
+  storageBucket: "store24-5c657.firebasestorage.app",
+  messagingSenderId: "524366256106",
+  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.addReceipt = async () => {
+
+    const product =
+        document.getElementById("product").value;
+
+    const supplier =
+        document.getElementById("supplier").value;
+
+    const quantity =
+        Number(
+            document.getElementById("quantity").value
+        );
+
+    const date =
+        document.getElementById("receiptDate").value;
+
+    await addDoc(
+        collection(db,"receipts"),
+        {
+            product,
+            supplier,
+            quantity,
+            date
+        }
+    );
+
+    loadReceipts();
+
+};
+
+window.deleteReceipt = async (id) => {
+
+    if(!confirm("Удалить поступление?"))
+        return;
+
+    await deleteDoc(
+        doc(db,"receipts",id)
+    );
+
+    loadReceipts();
+
+};
+
+window.editReceipt = async (id,data) => {
+
+    const product =
+        prompt(
+            "Товар",
+            data.product
+        );
+
+    if(product===null)
+        return;
+
+    const supplier =
+        prompt(
+            "Поставщик",
+            data.supplier
+        );
+
+    const quantity =
+        prompt(
+            "Количество",
+            data.quantity
+        );
+
+    await updateDoc(
+        doc(db,"receipts",id),
+        {
+            product,
+            supplier,
+            quantity:Number(quantity)
+        }
+    );
+
+    loadReceipts();
+
+};
+
+window.loadReceipts = async () => {
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    const table =
+        document.getElementById("receiptsTable");
+
+    table.innerHTML = "";
+
+    let totalItems = 0;
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"receipts")
+        );
+
+    const receipts = [];
+
+    querySnapshot.forEach((document)=>{
+
+        receipts.push({
+            id:document.id,
+            ...document.data()
+        });
+
+    });
+
+    receipts.reverse();
+
+    receipts.forEach((receipt)=>{
+
+        totalItems +=
+            Number(receipt.quantity || 0);
+
+        if(
+            search &&
+            !receipt.product
+            .toLowerCase()
+            .includes(search)
+        ){
+            return;
+        }
+
+        table.innerHTML += `
+        <tr>
+
+        <td>${receipt.product}</td>
+        <td>${receipt.supplier}</td>
+        <td>${receipt.quantity}</td>
+        <td>${receipt.date}</td>
+
+        <td>
+
+        <button
+        class="edit-btn"
+        onclick='editReceipt("${receipt.id}",${JSON.stringify(receipt)})'>
+        Изменить
+        </button>
+
+        <button
+        class="delete-btn"
+        onclick='deleteReceipt("${receipt.id}")'>
+        Удалить
+        </button>
+
+        </td>
+
+        </tr>
+        `;
+    });
+
+    document.getElementById("receiptsCount").innerText =
+        receipts.length;
+
+    document.getElementById("totalItems").innerText =
+        totalItems;
+
+};
+
+loadReceipts();
+
+</script>
+
+</body>
+</html>
