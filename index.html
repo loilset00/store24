@@ -2,66 +2,189 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Store24</title>
 
-<link rel="stylesheet" href="css/style.css">
-
 <style>
-.menu{
-    display:flex;
-    flex-wrap:wrap;
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:30px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+.header{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+    margin-bottom:20px;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
     gap:20px;
-    margin-top:30px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:white;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+    text-align:center;
+}
+
+.stat-number{
+    font-size:40px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.menu{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
 }
 
 .card{
-    width:220px;
-    padding:20px;
     background:white;
+    padding:25px;
     border-radius:10px;
-    box-shadow:0 0 10px rgba(0,0,0,0.1);
     text-decoration:none;
     color:black;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+    transition:.2s;
 }
-</style>
 
+.card:hover{
+    transform:translateY(-3px);
+}
+
+.card h2{
+    margin-top:0;
+}
+
+</style>
 </head>
 
 <body>
 
-<div class="container" style="width:900px;">
+<div class="container">
+
+<div class="header">
 
 <h1>Информационная система магазина «24»</h1>
+
+<p>
+Панель управления учётом товаров
+</p>
+
+</div>
+
+<div class="stats">
+
+<div class="stat-card">
+<div class="stat-number" id="productsCount">0</div>
+<div>Товаров</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-number" id="categoriesCount">0</div>
+<div>Категорий</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-number" id="suppliersCount">0</div>
+<div>Поставщиков</div>
+</div>
+
+</div>
 
 <div class="menu">
 
 <a class="card" href="products.html">
-    Товары
+<h2>Товары</h2>
+<p>Управление товарами магазина</p>
 </a>
 
 <a class="card" href="categories.html">
-    Категории
+<h2>Категории</h2>
+<p>Управление категориями товаров</p>
 </a>
 
 <a class="card" href="suppliers.html">
-    Поставщики
-</a>
-
-<a class="card" href="#">
-    Продажи
-</a>
-
-<a class="card" href="#">
-    Поступления
-</a>
-
-<a class="card" href="#">
-    Пользователи
+<h2>Поставщики</h2>
+<p>Управление поставщиками</p>
 </a>
 
 </div>
 
 </div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+getDocs
+}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
+  authDomain: "store24-5c657.firebaseapp.com",
+  projectId: "store24-5c657",
+  storageBucket: "store24-5c657.firebasestorage.app",
+  messagingSenderId: "524366256106",
+  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function loadStats(){
+
+    const products =
+        await getDocs(
+            collection(db,"products")
+        );
+
+    const categories =
+        await getDocs(
+            collection(db,"categories")
+        );
+
+    const suppliers =
+        await getDocs(
+            collection(db,"suppliers")
+        );
+
+    document.getElementById("productsCount").innerText =
+        products.size;
+
+    document.getElementById("categoriesCount").innerText =
+        categories.size;
+
+    document.getElementById("suppliersCount").innerText =
+        suppliers.size;
+
+}
+
+loadStats();
+
+</script>
 
 </body>
 </html>
