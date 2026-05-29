@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store24 - Продажи</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:30px;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+input{
+    padding:10px;
+    margin:5px;
+}
+
+button{
+    padding:10px 15px;
+    margin:5px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    color:white;
+    background:#2563eb;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+.back-btn{
+    background:#6b7280;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Продажи</h1>
+
+<a href="index.html">
+<button class="back-btn">
+На главную
+</button>
+</a>
+
+</div>
+
+<div class="card">
+
+<h2>Добавить продажу</h2>
+
+<input
+type="text"
+id="product"
+placeholder="Товар"
+>
+
+<input
+type="number"
+id="amount"
+placeholder="Количество"
+>
+
+<input
+type="date"
+id="saleDate"
+>
+
+<button onclick="addSale()">
+Добавить
+</button>
+
+</div>
+
+<div class="card">
+
+<input
+type="text"
+id="search"
+placeholder="Поиск товара"
+onkeyup="loadSales()"
+>
+
+</div>
+
+<div class="card">
+
+<table>
+
+<thead>
+<tr>
+<th>Товар</th>
+<th>Количество</th>
+<th>Дата</th>
+<th>Действия</th>
+</tr>
+</thead>
+
+<tbody id="salesTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+doc,
+deleteDoc
+}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
+  authDomain: "store24-5c657.firebaseapp.com",
+  projectId: "store24-5c657",
+  storageBucket: "store24-5c657.firebasestorage.app",
+  messagingSenderId: "524366256106",
+  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.addSale = async () => {
+
+    await addDoc(
+        collection(db,"sales"),
+        {
+            product:
+                document.getElementById("product").value,
+
+            amount:
+                Number(
+                    document.getElementById("amount").value
+                ),
+
+            date:
+                document.getElementById("saleDate").value
+        }
+    );
+
+    loadSales();
+
+};
+
+window.deleteSale = async (id) => {
+
+    await deleteDoc(
+        doc(db,"sales",id)
+    );
+
+    loadSales();
+
+};
+
+window.loadSales = async () => {
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    const table =
+        document.getElementById("salesTable");
+
+    table.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"sales")
+        );
+
+    querySnapshot.forEach((document)=>{
+
+        const sale = document.data();
+
+        if(
+            search &&
+            !sale.product
+            .toLowerCase()
+            .includes(search)
+        ){
+            return;
+        }
+
+        table.innerHTML += `
+        <tr>
+
+            <td>${sale.product}</td>
+            <td>${sale.amount}</td>
+            <td>${sale.date}</td>
+
+            <td>
+                <button
+                class="delete-btn"
+                onclick="deleteSale('${document.id}')">
+                Удалить
+                </button>
+            </td>
+
+        </tr>
+        `;
+    });
+
+};
+
+loadSales();
+
+</script>
+
+</body>
+</html>
