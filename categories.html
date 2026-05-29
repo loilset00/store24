@@ -8,40 +8,77 @@
 
 <style>
 
+*{
+    box-sizing:border-box;
+}
+
 body{
     font-family:Arial,sans-serif;
     background:#f4f6f9;
-    padding:30px;
     margin:0;
+    padding:20px;
 }
 
 .container{
-    max-width:1000px;
+    max-width:1200px;
     margin:auto;
+}
+
+.header{
+    background:linear-gradient(135deg,#2563eb,#1e40af);
+    color:white;
+    padding:30px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,.15);
 }
 
 .card{
     background:white;
     padding:20px;
-    border-radius:10px;
+    border-radius:15px;
     margin-bottom:20px;
-    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stat-number{
+    font-size:36px;
+    font-weight:bold;
+    color:#2563eb;
 }
 
 input{
-    padding:10px;
-    margin:5px;
+    padding:12px;
     border:1px solid #ccc;
-    border-radius:5px;
+    border-radius:8px;
+    margin:5px;
 }
 
 button{
-    padding:10px 15px;
-    margin:5px;
+    padding:12px 15px;
     border:none;
-    border-radius:5px;
+    border-radius:8px;
     cursor:pointer;
     color:white;
+    margin:5px;
+}
+
+.add-btn{
     background:#2563eb;
 }
 
@@ -57,6 +94,10 @@ button{
     background:#6b7280;
 }
 
+.table-wrapper{
+    overflow-x:auto;
+}
+
 table{
     width:100%;
     border-collapse:collapse;
@@ -64,12 +105,30 @@ table{
 
 th,td{
     border:1px solid #ddd;
-    padding:10px;
+    padding:12px;
 }
 
 th{
     background:#2563eb;
     color:white;
+}
+
+@media(max-width:768px){
+
+    body{
+        padding:10px;
+    }
+
+    input{
+        width:100%;
+        margin-bottom:10px;
+    }
+
+    button{
+        width:100%;
+        margin-bottom:10px;
+    }
+
 }
 
 </style>
@@ -79,15 +138,26 @@ th{
 
 <div class="container">
 
-<div class="card">
+<div class="header">
 
-<h1>Категории товаров</h1>
+<h1>📂 Категории товаров</h1>
+
+<p>Управление категориями магазина</p>
 
 <a href="index.html">
 <button class="back-btn">
-На главную
+← На главную
 </button>
 </a>
+
+</div>
+
+<div class="stats">
+
+<div class="stat-card">
+<div class="stat-number" id="categoriesCount">0</div>
+<div>Категорий</div>
+</div>
 
 </div>
 
@@ -101,8 +171,10 @@ id="categoryName"
 placeholder="Название категории"
 >
 
-<button onclick="addCategory()">
-Добавить
+<button
+class="add-btn"
+onclick="addCategory()">
+Добавить категорию
 </button>
 
 </div>
@@ -120,15 +192,15 @@ onkeyup="loadCategories()"
 
 <div class="card">
 
+<div class="table-wrapper">
+
 <table>
 
 <thead>
-
 <tr>
-<th>Название</th>
+<th>Название категории</th>
 <th>Действия</th>
 </tr>
-
 </thead>
 
 <tbody id="categoriesTable">
@@ -136,6 +208,8 @@ onkeyup="loadCategories()"
 </tbody>
 
 </table>
+
+</div>
 
 </div>
 
@@ -181,9 +255,7 @@ window.addCategory = async () => {
 
     await addDoc(
         collection(db,"categories"),
-        {
-            name:name
-        }
+        { name }
     );
 
     document.getElementById("categoryName").value = "";
@@ -194,9 +266,8 @@ window.addCategory = async () => {
 
 window.deleteCategory = async (id) => {
 
-    if(!confirm("Удалить категорию?")){
+    if(!confirm("Удалить категорию?"))
         return;
-    }
 
     await deleteDoc(
         doc(db,"categories",id)
@@ -210,13 +281,12 @@ window.editCategory = async (id,currentName) => {
 
     const newName =
         prompt(
-            "Новое название категории",
+            "Название категории",
             currentName
         );
 
-    if(!newName){
+    if(newName===null)
         return;
-    }
 
     await updateDoc(
         doc(db,"categories",id),
@@ -231,14 +301,14 @@ window.editCategory = async (id,currentName) => {
 
 window.loadCategories = async () => {
 
+    const table =
+        document.getElementById("categoriesTable");
+
     const search =
         document
         .getElementById("search")
         .value
         .toLowerCase();
-
-    const table =
-        document.getElementById("categoriesTable");
 
     table.innerHTML = "";
 
@@ -247,10 +317,20 @@ window.loadCategories = async () => {
             collection(db,"categories")
         );
 
+    const categories = [];
+
     querySnapshot.forEach((document)=>{
 
-        const category =
-            document.data();
+        categories.push({
+            id:document.id,
+            ...document.data()
+        });
+
+    });
+
+    categories.reverse();
+
+    categories.forEach((category)=>{
 
         if(
             search &&
@@ -264,27 +344,31 @@ window.loadCategories = async () => {
         table.innerHTML += `
         <tr>
 
-            <td>${category.name}</td>
+        <td>${category.name}</td>
 
-            <td>
+        <td>
 
-                <button
-                class="edit-btn"
-                onclick="editCategory('${document.id}','${category.name}')">
-                Изменить
-                </button>
+        <button
+        class="edit-btn"
+        onclick='editCategory("${category.id}","${category.name}")'>
+        Изменить
+        </button>
 
-                <button
-                class="delete-btn"
-                onclick="deleteCategory('${document.id}')">
-                Удалить
-                </button>
+        <button
+        class="delete-btn"
+        onclick='deleteCategory("${category.id}")'>
+        Удалить
+        </button>
 
-            </td>
+        </td>
 
         </tr>
         `;
+
     });
+
+    document.getElementById("categoriesCount").innerText =
+        categories.length;
 
 };
 

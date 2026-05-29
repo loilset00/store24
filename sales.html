@@ -3,42 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Store24 - Продажи</title>
 
 <style>
+
+*{
+    box-sizing:border-box;
+}
+
 body{
     font-family:Arial,sans-serif;
     background:#f4f6f9;
     margin:0;
-    padding:30px;
+    padding:20px;
 }
 
 .container{
-    max-width:1100px;
+    max-width:1300px;
     margin:auto;
+}
+
+.header{
+    background:linear-gradient(135deg,#2563eb,#1e40af);
+    color:white;
+    padding:30px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,.15);
 }
 
 .card{
     background:white;
     padding:20px;
-    border-radius:10px;
+    border-radius:15px;
     margin-bottom:20px;
     box-shadow:0 0 10px rgba(0,0,0,.1);
 }
 
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stat-number{
+    font-size:36px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
 input{
-    padding:10px;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
     margin:5px;
 }
 
 button{
-    padding:10px 15px;
-    margin:5px;
+    padding:12px 15px;
     border:none;
-    border-radius:5px;
+    border-radius:8px;
     cursor:pointer;
     color:white;
+    margin:5px;
+}
+
+.add-btn{
     background:#2563eb;
+}
+
+.edit-btn{
+    background:#f59e0b;
 }
 
 .delete-btn{
@@ -49,6 +94,10 @@ button{
     background:#6b7280;
 }
 
+.table-wrapper{
+    overflow-x:auto;
+}
+
 table{
     width:100%;
     border-collapse:collapse;
@@ -56,29 +105,64 @@ table{
 
 th,td{
     border:1px solid #ddd;
-    padding:10px;
+    padding:12px;
 }
 
 th{
     background:#2563eb;
     color:white;
 }
-</style>
 
+@media(max-width:768px){
+
+    body{
+        padding:10px;
+    }
+
+    input{
+        width:100%;
+        margin-bottom:10px;
+    }
+
+    button{
+        width:100%;
+        margin-bottom:10px;
+    }
+
+}
+
+</style>
 </head>
+
 <body>
 
 <div class="container">
 
-<div class="card">
+<div class="header">
 
-<h1>Продажи</h1>
+<h1>💰 Продажи</h1>
+
+<p>Учёт реализации товаров</p>
 
 <a href="index.html">
 <button class="back-btn">
-На главную
+← На главную
 </button>
 </a>
+
+</div>
+
+<div class="stats">
+
+<div class="stat-card">
+<div class="stat-number" id="salesCount">0</div>
+<div>Продаж</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-number" id="revenue">0 ₽</div>
+<div>Выручка</div>
+</div>
 
 </div>
 
@@ -99,12 +183,20 @@ placeholder="Количество"
 >
 
 <input
+type="number"
+id="price"
+placeholder="Цена"
+>
+
+<input
 type="date"
 id="saleDate"
 >
 
-<button onclick="addSale()">
-Добавить
+<button
+class="add-btn"
+onclick="addSale()">
+Добавить продажу
 </button>
 
 </div>
@@ -122,12 +214,16 @@ onkeyup="loadSales()"
 
 <div class="card">
 
+<div class="table-wrapper">
+
 <table>
 
 <thead>
 <tr>
 <th>Товар</th>
 <th>Количество</th>
+<th>Цена</th>
+<th>Сумма</th>
 <th>Дата</th>
 <th>Действия</th>
 </tr>
@@ -138,6 +234,8 @@ onkeyup="loadSales()"
 </tbody>
 
 </table>
+
+</div>
 
 </div>
 
@@ -154,7 +252,8 @@ collection,
 addDoc,
 getDocs,
 doc,
-deleteDoc
+deleteDoc,
+updateDoc
 }
 from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -172,19 +271,28 @@ const db = getFirestore(app);
 
 window.addSale = async () => {
 
+    const product =
+        document.getElementById("product").value;
+
+    const amount =
+        Number(document.getElementById("amount").value);
+
+    const price =
+        Number(document.getElementById("price").value);
+
+    const date =
+        document.getElementById("saleDate").value;
+
+    const total = amount * price;
+
     await addDoc(
         collection(db,"sales"),
         {
-            product:
-                document.getElementById("product").value,
-
-            amount:
-                Number(
-                    document.getElementById("amount").value
-                ),
-
-            date:
-                document.getElementById("saleDate").value
+            product,
+            amount,
+            price,
+            total,
+            date
         }
     );
 
@@ -194,6 +302,9 @@ window.addSale = async () => {
 
 window.deleteSale = async (id) => {
 
+    if(!confirm("Удалить продажу?"))
+        return;
+
     await deleteDoc(
         doc(db,"sales",id)
     );
@@ -202,7 +313,40 @@ window.deleteSale = async (id) => {
 
 };
 
+window.editSale = async (id,sale) => {
+
+    const product =
+        prompt("Товар",sale.product);
+
+    if(product===null) return;
+
+    const amount =
+        prompt("Количество",sale.amount);
+
+    const price =
+        prompt("Цена",sale.price);
+
+    const total =
+        Number(amount) * Number(price);
+
+    await updateDoc(
+        doc(db,"sales",id),
+        {
+            product,
+            amount:Number(amount),
+            price:Number(price),
+            total
+        }
+    );
+
+    loadSales();
+
+};
+
 window.loadSales = async () => {
+
+    const table =
+        document.getElementById("salesTable");
 
     const search =
         document
@@ -210,19 +354,31 @@ window.loadSales = async () => {
         .value
         .toLowerCase();
 
-    const table =
-        document.getElementById("salesTable");
-
     table.innerHTML = "";
+
+    let revenue = 0;
 
     const querySnapshot =
         await getDocs(
             collection(db,"sales")
         );
 
+    const sales = [];
+
     querySnapshot.forEach((document)=>{
 
-        const sale = document.data();
+        sales.push({
+            id:document.id,
+            ...document.data()
+        });
+
+    });
+
+    sales.reverse();
+
+    sales.forEach((sale)=>{
+
+        revenue += Number(sale.total || 0);
 
         if(
             search &&
@@ -236,21 +392,38 @@ window.loadSales = async () => {
         table.innerHTML += `
         <tr>
 
-            <td>${sale.product}</td>
-            <td>${sale.amount}</td>
-            <td>${sale.date}</td>
+        <td>${sale.product}</td>
+        <td>${sale.amount}</td>
+        <td>${sale.price}</td>
+        <td>${sale.total}</td>
+        <td>${sale.date}</td>
 
-            <td>
-                <button
-                class="delete-btn"
-                onclick="deleteSale('${document.id}')">
-                Удалить
-                </button>
-            </td>
+        <td>
+
+        <button
+        class="edit-btn"
+        onclick='editSale("${sale.id}",${JSON.stringify(sale)})'>
+        Изменить
+        </button>
+
+        <button
+        class="delete-btn"
+        onclick='deleteSale("${sale.id}")'>
+        Удалить
+        </button>
+
+        </td>
 
         </tr>
         `;
+
     });
+
+    document.getElementById("salesCount").innerText =
+        sales.length;
+
+    document.getElementById("revenue").innerText =
+        revenue + " ₽";
 
 };
 

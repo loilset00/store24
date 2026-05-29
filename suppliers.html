@@ -8,40 +8,77 @@
 
 <style>
 
+*{
+    box-sizing:border-box;
+}
+
 body{
     font-family:Arial,sans-serif;
     background:#f4f6f9;
-    padding:30px;
     margin:0;
+    padding:20px;
 }
 
 .container{
-    max-width:1100px;
+    max-width:1300px;
     margin:auto;
+}
+
+.header{
+    background:linear-gradient(135deg,#2563eb,#1e40af);
+    color:white;
+    padding:30px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,.15);
 }
 
 .card{
     background:white;
     padding:20px;
-    border-radius:10px;
+    border-radius:15px;
     margin-bottom:20px;
-    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stat-number{
+    font-size:36px;
+    font-weight:bold;
+    color:#2563eb;
 }
 
 input{
-    padding:10px;
-    margin:5px;
+    padding:12px;
     border:1px solid #ccc;
-    border-radius:5px;
+    border-radius:8px;
+    margin:5px;
 }
 
 button{
-    padding:10px 15px;
-    margin:5px;
+    padding:12px 15px;
     border:none;
-    border-radius:5px;
+    border-radius:8px;
     cursor:pointer;
     color:white;
+    margin:5px;
+}
+
+.add-btn{
     background:#2563eb;
 }
 
@@ -57,6 +94,10 @@ button{
     background:#6b7280;
 }
 
+.table-wrapper{
+    overflow-x:auto;
+}
+
 table{
     width:100%;
     border-collapse:collapse;
@@ -64,12 +105,30 @@ table{
 
 th,td{
     border:1px solid #ddd;
-    padding:10px;
+    padding:12px;
 }
 
 th{
     background:#2563eb;
     color:white;
+}
+
+@media(max-width:768px){
+
+    body{
+        padding:10px;
+    }
+
+    input{
+        width:100%;
+        margin-bottom:10px;
+    }
+
+    button{
+        width:100%;
+        margin-bottom:10px;
+    }
+
 }
 
 </style>
@@ -79,15 +138,26 @@ th{
 
 <div class="container">
 
-<div class="card">
+<div class="header">
 
-<h1>Поставщики</h1>
+<h1>🚚 Поставщики</h1>
+
+<p>Управление поставщиками магазина</p>
 
 <a href="index.html">
 <button class="back-btn">
-На главную
+← На главную
 </button>
 </a>
+
+</div>
+
+<div class="stats">
+
+<div class="stat-card">
+<div class="stat-number" id="suppliersCount">0</div>
+<div>Поставщиков</div>
+</div>
 
 </div>
 
@@ -107,8 +177,10 @@ id="supplierPhone"
 placeholder="Телефон"
 >
 
-<button onclick="addSupplier()">
-Добавить
+<button
+class="add-btn"
+onclick="addSupplier()">
+Добавить поставщика
 </button>
 
 </div>
@@ -126,6 +198,8 @@ onkeyup="loadSuppliers()"
 
 <div class="card">
 
+<div class="table-wrapper">
+
 <table>
 
 <thead>
@@ -141,6 +215,8 @@ onkeyup="loadSuppliers()"
 </tbody>
 
 </table>
+
+</div>
 
 </div>
 
@@ -195,8 +271,8 @@ window.addSupplier = async () => {
         }
     );
 
-    document.getElementById("supplierName").value = "";
-    document.getElementById("supplierPhone").value = "";
+    document.getElementById("supplierName").value="";
+    document.getElementById("supplierPhone").value="";
 
     loadSuppliers();
 
@@ -204,9 +280,8 @@ window.addSupplier = async () => {
 
 window.deleteSupplier = async (id) => {
 
-    if(!confirm("Удалить поставщика?")){
+    if(!confirm("Удалить поставщика?"))
         return;
-    }
 
     await deleteDoc(
         doc(db,"suppliers",id)
@@ -216,22 +291,27 @@ window.deleteSupplier = async (id) => {
 
 };
 
-window.editSupplier = async (id,currentName) => {
+window.editSupplier = async (id,supplier) => {
 
-    const newName =
+    const name =
         prompt(
-            "Новое название поставщика",
-            currentName
+            "Название поставщика",
+            supplier.name
         );
 
-    if(!newName){
-        return;
-    }
+    if(name===null) return;
+
+    const phone =
+        prompt(
+            "Телефон",
+            supplier.phone || ""
+        );
 
     await updateDoc(
         doc(db,"suppliers",id),
         {
-            name:newName
+            name,
+            phone
         }
     );
 
@@ -241,14 +321,14 @@ window.editSupplier = async (id,currentName) => {
 
 window.loadSuppliers = async () => {
 
+    const table =
+        document.getElementById("suppliersTable");
+
     const search =
         document
         .getElementById("search")
         .value
         .toLowerCase();
-
-    const table =
-        document.getElementById("suppliersTable");
 
     table.innerHTML = "";
 
@@ -257,10 +337,20 @@ window.loadSuppliers = async () => {
             collection(db,"suppliers")
         );
 
+    const suppliers = [];
+
     querySnapshot.forEach((document)=>{
 
-        const supplier =
-            document.data();
+        suppliers.push({
+            id:document.id,
+            ...document.data()
+        });
+
+    });
+
+    suppliers.reverse();
+
+    suppliers.forEach((supplier)=>{
 
         if(
             search &&
@@ -274,28 +364,32 @@ window.loadSuppliers = async () => {
         table.innerHTML += `
         <tr>
 
-            <td>${supplier.name}</td>
-            <td>${supplier.phone || "-"}</td>
+        <td>${supplier.name}</td>
+        <td>${supplier.phone || "-"}</td>
 
-            <td>
+        <td>
 
-                <button
-                class="edit-btn"
-                onclick="editSupplier('${document.id}','${supplier.name}')">
-                Изменить
-                </button>
+        <button
+        class="edit-btn"
+        onclick='editSupplier("${supplier.id}",${JSON.stringify(supplier)})'>
+        Изменить
+        </button>
 
-                <button
-                class="delete-btn"
-                onclick="deleteSupplier('${document.id}')">
-                Удалить
-                </button>
+        <button
+        class="delete-btn"
+        onclick='deleteSupplier("${supplier.id}")'>
+        Удалить
+        </button>
 
-            </td>
+        </td>
 
         </tr>
         `;
+
     });
+
+    document.getElementById("suppliersCount").innerText =
+        suppliers.length;
 
 };
 
