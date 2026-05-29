@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Store24 - Товары</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f4f6f9;
+    padding:30px;
+}
+
+button{
+    padding:10px 15px;
+    margin:5px;
+    cursor:pointer;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Товары магазина "24"</h1>
+
+<button onclick="seedData()">
+Заполнить тестовыми данными
+</button>
+
+<button onclick="loadProducts()">
+Обновить таблицу
+</button>
+
+<br><br>
+
+<table>
+<thead>
+<tr>
+<th>Название</th>
+<th>Категория</th>
+<th>Поставщик</th>
+<th>Цена</th>
+<th>Количество</th>
+</tr>
+</thead>
+
+<tbody id="productsTable">
+
+</tbody>
+
+</table>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs
+}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI"
+  authDomain: "store24-5c657.firebaseapp.com",
+  projectId: "store24-5c657",
+  storageBucket: "store24-5c657.firebasestorage.app",
+  messagingSenderId: "524366256106",
+  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.seedData = async () => {
+
+    const products = [
+
+        {
+            name:"Молоко Простоквашино",
+            category:"Молочная продукция",
+            supplier:"ООО Агро",
+            price:89,
+            quantity:25
+        },
+
+        {
+            name:"Хлеб Бородинский",
+            category:"Хлебобулочные изделия",
+            supplier:"Хлебозавод №1",
+            price:45,
+            quantity:30
+        },
+
+        {
+            name:"Сок Добрый",
+            category:"Напитки",
+            supplier:"ООО Мультон",
+            price:120,
+            quantity:18
+        },
+
+        {
+            name:"Минеральная вода",
+            category:"Напитки",
+            supplier:"Аква",
+            price:55,
+            quantity:40
+        }
+
+    ];
+
+    for(const product of products){
+
+        await addDoc(
+            collection(db,"products"),
+            product
+        );
+
+    }
+
+    alert("Тестовые данные добавлены");
+
+};
+
+window.loadProducts = async () => {
+
+    const table =
+        document.getElementById(
+            "productsTable"
+        );
+
+    table.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"products")
+        );
+
+    querySnapshot.forEach((doc)=>{
+
+        const p = doc.data();
+
+        table.innerHTML += `
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.category}</td>
+            <td>${p.supplier}</td>
+            <td>${p.price}</td>
+            <td>${p.quantity}</td>
+        </tr>
+        `;
+
+    });
+
+};
+
+loadProducts();
+
+</script>
+
+</body>
+</html>
