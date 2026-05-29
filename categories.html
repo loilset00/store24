@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Store24 - Категории</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    padding:30px;
+    margin:0;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+input{
+    padding:10px;
+    margin:5px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    padding:10px 15px;
+    margin:5px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    color:white;
+    background:#2563eb;
+}
+
+.edit-btn{
+    background:#f59e0b;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+.back-btn{
+    background:#6b7280;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Категории товаров</h1>
+
+<a href="index.html">
+<button class="back-btn">
+На главную
+</button>
+</a>
+
+</div>
+
+<div class="card">
+
+<h2>Добавление категории</h2>
+
+<input
+type="text"
+id="categoryName"
+placeholder="Название категории"
+>
+
+<button onclick="addCategory()">
+Добавить
+</button>
+
+</div>
+
+<div class="card">
+
+<input
+type="text"
+id="search"
+placeholder="Поиск категории"
+onkeyup="loadCategories()"
+>
+
+</div>
+
+<div class="card">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Название</th>
+<th>Действия</th>
+</tr>
+
+</thead>
+
+<tbody id="categoriesTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+doc,
+deleteDoc,
+updateDoc
+}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
+  authDomain: "store24-5c657.firebaseapp.com",
+  projectId: "store24-5c657",
+  storageBucket: "store24-5c657.firebasestorage.app",
+  messagingSenderId: "524366256106",
+  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.addCategory = async () => {
+
+    const name =
+        document.getElementById("categoryName").value;
+
+    if(!name){
+        alert("Введите название категории");
+        return;
+    }
+
+    await addDoc(
+        collection(db,"categories"),
+        {
+            name:name
+        }
+    );
+
+    document.getElementById("categoryName").value = "";
+
+    loadCategories();
+
+};
+
+window.deleteCategory = async (id) => {
+
+    if(!confirm("Удалить категорию?")){
+        return;
+    }
+
+    await deleteDoc(
+        doc(db,"categories",id)
+    );
+
+    loadCategories();
+
+};
+
+window.editCategory = async (id,currentName) => {
+
+    const newName =
+        prompt(
+            "Новое название категории",
+            currentName
+        );
+
+    if(!newName){
+        return;
+    }
+
+    await updateDoc(
+        doc(db,"categories",id),
+        {
+            name:newName
+        }
+    );
+
+    loadCategories();
+
+};
+
+window.loadCategories = async () => {
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    const table =
+        document.getElementById("categoriesTable");
+
+    table.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"categories")
+        );
+
+    querySnapshot.forEach((document)=>{
+
+        const category =
+            document.data();
+
+        if(
+            search &&
+            !category.name
+            .toLowerCase()
+            .includes(search)
+        ){
+            return;
+        }
+
+        table.innerHTML += `
+        <tr>
+
+            <td>${category.name}</td>
+
+            <td>
+
+                <button
+                class="edit-btn"
+                onclick="editCategory('${document.id}','${category.name}')">
+                Изменить
+                </button>
+
+                <button
+                class="delete-btn"
+                onclick="deleteCategory('${document.id}')">
+                Удалить
+                </button>
+
+            </td>
+
+        </tr>
+        `;
+    });
+
+};
+
+loadCategories();
+
+</script>
+
+</body>
+</html>
