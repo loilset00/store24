@@ -127,6 +127,12 @@ th{
     input{
         width:100%;
         margin-bottom:10px;
+	select{
+    		padding:12px;
+    		border:1px solid #ccc;
+    		border-radius:8px;
+    		margin:5px;
+	}
     }
 
     button{
@@ -185,9 +191,9 @@ th{
 
 <input type="text" id="name" placeholder="Название">
 
-<input type="text" id="category" placeholder="Категория">
+<select id="category"></select>
 
-<input type="text" id="supplier" placeholder="Поставщик">
+<select id="supplier"></select>
 
 <input type="number" id="price" placeholder="Цена">
 
@@ -279,6 +285,60 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let categoriesList = [];
+
+async function loadCategories(){
+
+    const select =
+        document.getElementById("category");
+
+    select.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"categories")
+        );
+
+    querySnapshot.forEach((document)=>{
+
+        const category =
+            document.data();
+
+        select.innerHTML += `
+            <option value="${category.name}">
+                ${category.name}
+            </option>
+        `;
+
+    });
+
+}
+
+async function loadSuppliers(){
+
+    const select =
+        document.getElementById("supplier");
+
+    select.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"suppliers")
+        );
+
+    querySnapshot.forEach((document)=>{
+
+        const supplier =
+            document.data();
+
+        select.innerHTML += `
+            <option value="${supplier.name}">
+                ${supplier.name}
+            </option>
+        `;
+
+    });
+
+}
 
 async function loadCategoryFilter(){
 
@@ -510,6 +570,10 @@ window.loadProducts = async () => {
 };
 
 window.onload = async () => {
+
+    await loadCategories();
+
+    await loadSuppliers();
 
     await loadCategoryFilter();
 
