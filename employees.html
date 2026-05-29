@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Store24 - Сотрудники</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:1300px;
+    margin:auto;
+}
+
+.header{
+    background:linear-gradient(135deg,#2563eb,#1e40af);
+    color:white;
+    padding:30px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,.15);
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    margin-bottom:20px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.stat-card{
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+.stat-number{
+    font-size:36px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+input, select{
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    margin:5px;
+}
+
+button{
+    padding:12px 15px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+    margin:5px;
+}
+
+.add-btn{
+    background:#2563eb;
+}
+
+.edit-btn{
+    background:#f59e0b;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+.back-btn{
+    background:#6b7280;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:12px;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+}
+
+.table-wrapper{
+    overflow-x:auto;
+}
+
+@media(max-width:768px){
+
+    input,select{
+        width:100%;
+    }
+
+    button{
+        width:100%;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<h1>👨‍💼 Сотрудники</h1>
+
+<p>Управление персоналом магазина</p>
+
+<a href="index.html">
+<button class="back-btn">
+← На главную
+</button>
+</a>
+
+</div>
+
+<div class="stats">
+
+<div class="stat-card">
+<div class="stat-number" id="employeesCount">0</div>
+<div>Сотрудников</div>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Добавить сотрудника</h2>
+
+<input
+type="text"
+id="name"
+placeholder="ФИО"
+>
+
+<select id="position">
+
+<option>Продавец</option>
+<option>Кассир</option>
+<option>Администратор</option>
+<option>Заведующий магазином</option>
+<option>Грузчик</option>
+
+</select>
+
+<input
+type="date"
+id="workDate"
+>
+
+<input
+type="time"
+id="startTime"
+>
+
+<input
+type="time"
+id="endTime"
+>
+
+<button
+class="add-btn"
+onclick="addEmployee()">
+Добавить сотрудника
+</button>
+
+</div>
+
+<div class="card">
+
+<input
+type="text"
+id="search"
+placeholder="Поиск сотрудника"
+onkeyup="loadEmployees()"
+>
+
+</div>
+
+<div class="card">
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+<tr>
+<th>ФИО</th>
+<th>Должность</th>
+<th>Дата</th>
+<th>Начало</th>
+<th>Конец</th>
+<th>Действия</th>
+</tr>
+</thead>
+
+<tbody id="employeesTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+doc,
+deleteDoc,
+updateDoc
+}
+from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
+  authDomain: "store24-5c657.firebaseapp.com",
+  projectId: "store24-5c657",
+  storageBucket: "store24-5c657.firebasestorage.app",
+  messagingSenderId: "524366256106",
+  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.addEmployee = async () => {
+
+    const name =
+        document.getElementById("name").value;
+
+    const position =
+        document.getElementById("position").value;
+
+    const workDate =
+        document.getElementById("workDate").value;
+
+    const startTime =
+        document.getElementById("startTime").value;
+
+    const endTime =
+        document.getElementById("endTime").value;
+
+    await addDoc(
+        collection(db,"employees"),
+        {
+            name,
+            position,
+            workDate,
+            startTime,
+            endTime
+        }
+    );
+
+    loadEmployees();
+
+};
+
+window.deleteEmployee = async (id) => {
+
+    if(!confirm("Удалить сотрудника?"))
+        return;
+
+    await deleteDoc(
+        doc(db,"employees",id)
+    );
+
+    loadEmployees();
+
+};
+
+window.editEmployee = async (id,data) => {
+
+    const name =
+        prompt("ФИО",data.name);
+
+    if(name===null)
+        return;
+
+    await updateDoc(
+        doc(db,"employees",id),
+        {
+            name
+        }
+    );
+
+    loadEmployees();
+
+};
+
+window.loadEmployees = async () => {
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    const table =
+        document.getElementById("employeesTable");
+
+    table.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"employees")
+        );
+
+    const employees = [];
+
+    querySnapshot.forEach((document)=>{
+
+        employees.push({
+            id:document.id,
+            ...document.data()
+        });
+
+    });
+
+    employees.reverse();
+
+    employees.forEach((employee)=>{
+
+        if(
+            search &&
+            !employee.name
+            .toLowerCase()
+            .includes(search)
+        ){
+            return;
+        }
+
+        table.innerHTML += `
+        <tr>
+
+        <td>${employee.name}</td>
+        <td>${employee.position}</td>
+        <td>${employee.workDate}</td>
+        <td>${employee.startTime}</td>
+        <td>${employee.endTime}</td>
+
+        <td>
+
+        <button
+        class="edit-btn"
+        onclick='editEmployee("${employee.id}",${JSON.stringify(employee)})'>
+        Изменить
+        </button>
+
+        <button
+        class="delete-btn"
+        onclick='deleteEmployee("${employee.id}")'>
+        Удалить
+        </button>
+
+        </td>
+
+        </tr>
+        `;
+    });
+
+    document.getElementById("employeesCount").innerText =
+        employees.length;
+
+};
+
+loadEmployees();
+
+</script>
+
+</body>
+</html>
