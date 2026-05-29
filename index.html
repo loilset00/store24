@@ -142,10 +142,19 @@ body{
 </div>
 
 <div class="stat-card">
-<div class="stat-number" id="salesCount">0</div>
-<div>Продаж</div>
+<div class="stat-number" id="revenueCount">0 ₽</div>
+<div>Выручка</div>
 </div>
 
+<div class="stat-card">
+<div class="stat-number" id="receiptsCount">0</div>
+<div>Поступлений</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-number" id="warehouseCount">0</div>
+<div>Остаток на складе</div>
+</div>
 </div>
 
 <div class="menu">
@@ -215,8 +224,35 @@ async function loadStats(){
         await getDocs(collection(db,"suppliers"));
 
     const sales =
-        await getDocs(collection(db,"sales"));
+    	await getDocs(
+        collection(db,"sales")
+    );
 
+    const receipts =
+    	await getDocs(
+        collection(db,"receipts")
+    );
+	let revenue = 0;
+	let warehouse = 0;
+    sales.forEach((doc)=>{
+
+    const sale =
+        doc.data();
+
+    revenue +=
+        Number(sale.total || 0);
+
+     });
+
+     products.forEach((doc)=>{
+
+    	const product =
+        doc.data();
+
+    	warehouse +=
+        Number(product.quantity || 0);
+
+     });
     document.getElementById("productsCount").innerText =
         products.size;
 
@@ -226,8 +262,14 @@ async function loadStats(){
     document.getElementById("suppliersCount").innerText =
         suppliers.size;
 
-    document.getElementById("salesCount").innerText =
-        sales.size;
+    document.getElementById("revenueCount").innerText =
+    	revenue + " ₽";
+
+    document.getElementById("receiptsCount").innerText =
+    	receipts.size;
+
+    document.getElementById("warehouseCount").innerText =
+    	warehouse;
 }
 
 loadStats();
