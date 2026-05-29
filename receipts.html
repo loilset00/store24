@@ -509,15 +509,23 @@ window.loadReceipts = async () => {
         `;
     });
 
-    document.getElementById("receiptsCount").innerText =
-        receipts.length;
+   document.getElementById("receiptsCount").innerText =
+    receipts.length;
 
-    document.getElementById("totalItems").innerText =
-        totalItems;
+document.getElementById("totalItems").innerText =
+    totalItems;
 
 };
 
-loadReceipts();
+window.onload = async () => {
+
+    await loadProductsSelect();
+
+    await loadSuppliersSelect();
+
+    loadReceipts();
+
+};
 
 </script>
 
