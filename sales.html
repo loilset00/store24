@@ -170,22 +170,26 @@ th{
 
 <h2>Добавить продажу</h2>
 
+<select id="product"></select>
+
 <input
 type="text"
-id="product"
-placeholder="Товар"
+id="productPrice"
+placeholder="Цена"
+readonly
+>
+
+<input
+type="text"
+id="productStock"
+placeholder="Остаток"
+readonly
 >
 
 <input
 type="number"
 id="amount"
 placeholder="Количество"
->
-
-<input
-type="number"
-id="price"
-placeholder="Цена"
 >
 
 <input
@@ -247,100 +251,242 @@ import { initializeApp }
 from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 
 import {
-getFirestore,
-collection,
-addDoc,
-getDocs,
-doc,
-deleteDoc,
-updateDoc
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    doc,
+    deleteDoc,
+    updateDoc,
+    getDoc
 }
 from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
-  authDomain: "store24-5c657.firebaseapp.com",
-  projectId: "store24-5c657",
-  storageBucket: "store24-5c657.firebasestorage.app",
-  messagingSenderId: "524366256106",
-  appId: "1:524366256106:web:2aff7066afabc4ccc58493"
+    apiKey: "AIzaSyBbem9e3uL0H5JtbFrM8q_5xK8mz-5VcDI",
+    authDomain: "store24-5c657.firebaseapp.com",
+    projectId: "store24-5c657",
+    storageBucket: "store24-5c657.firebasestorage.app",
+    messagingSenderId: "524366256106",
+    appId: "1:524366256106:web:2aff7066afabc4ccc58493"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window.addSale = async () => {
+let products = [];
+
+async function loadProductsSelect() {
+
+    const select =
+        document.getElementById("product");
+
+    select.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db, "products")
+        );
+
+    products = [];
+
+    querySnapshot.forEach((document) => {
+
+        const product = {
+            id: document.id,
+            ...document.data()
+        };
+
+        products.push(product);
+
+        select.innerHTML += `
+            <option value="${document.id}">
+                ${product.name}
+            </option>
+        `;
+    });
+
+    updateProductInfo();
+}
+
+window.updateProductInfo = () => {
+
+    const productId =
+        document.getElementById("product").value;
 
     const product =
+        products.find(p => p.id === productId);
+
+    if (!product) return;
+
+    document.getElementById("productPrice").value =
+        product.price + " ₽";
+
+    document.getElementById("productStock").value =
+        product.quantity + " шт";
+};
+
+window.addSale = async () => {
+
+    const productId =
         document.getElementById("product").value;
 
     const amount =
-        Number(document.getElementById("amount").value);
-
-    const price =
-        Number(document.getElementById("price").value);
+        Number(
+            document.getElementById("amount").value
+        );
 
     const date =
         document.getElementById("saleDate").value;
 
-    const total = amount * price;
+    const product =
+        products.find(p => p.id === productId);
+
+    if (!product) {
+        alert("Товар не найден");
+        return;
+    }
+
+    if (amount <= 0) {
+        alert("Введите количество");
+        return;
+    }
+
+    if (amount > product.quantity) {
+        alert("Недостаточно товара на складе");
+        return;
+    }
+
+    const total =
+        amount * product.price;
 
     await addDoc(
-        collection(db,"sales"),
+        collection(db, "sales"),
         {
-            product,
+            productId,
+            product: product.name,
             amount,
-            price,
+            price: product.price,
             total,
             date
         }
     );
 
-    loadSales();
-
-};
-
-window.deleteSale = async (id) => {
-
-    if(!confirm("Удалить продажу?"))
-        return;
-
-    await deleteDoc(
-        doc(db,"sales",id)
-    );
-
-    loadSales();
-
-};
-
-window.editSale = async (id,sale) => {
-
-    const product =
-        prompt("Товар",sale.product);
-
-    if(product===null) return;
-
-    const amount =
-        prompt("Количество",sale.amount);
-
-    const price =
-        prompt("Цена",sale.price);
-
-    const total =
-        Number(amount) * Number(price);
-
     await updateDoc(
-        doc(db,"sales",id),
+        doc(db, "products", productId),
         {
-            product,
-            amount:Number(amount),
-            price:Number(price),
-            total
+            quantity:
+                product.quantity - amount
         }
     );
 
+    await loadProductsSelect();
     loadSales();
 
+    document.getElementById("amount").value = "";
+};
+
+window.deleteSale = async (saleId) => {
+
+    if (!confirm("Удалить продажу?"))
+        return;
+
+    const saleRef =
+        doc(db, "sales", saleId);
+
+    const saleSnap =
+        await getDoc(saleRef);
+
+    if (!saleSnap.exists())
+        return;
+
+    const sale =
+        saleSnap.data();
+
+    const productRef =
+        doc(db, "products", sale.productId);
+
+    const productSnap =
+        await getDoc(productRef);
+
+    if (productSnap.exists()) {
+
+        const product =
+            productSnap.data();
+
+        await updateDoc(
+            productRef,
+            {
+                quantity:
+                    Number(product.quantity) +
+                    Number(sale.amount)
+            }
+        );
+    }
+
+    await deleteDoc(saleRef);
+
+    await loadProductsSelect();
+    loadSales();
+};
+
+window.editSale = async (id, sale) => {
+
+    const newAmount =
+        Number(
+            prompt(
+                "Новое количество",
+                sale.amount
+            )
+        );
+
+    if (!newAmount || newAmount <= 0)
+        return;
+
+    const productRef =
+        doc(db, "products", sale.productId);
+
+    const productSnap =
+        await getDoc(productRef);
+
+    if (!productSnap.exists()) {
+        alert("Товар не найден");
+        return;
+    }
+
+    const product =
+        productSnap.data();
+
+    const returnedStock =
+        Number(product.quantity) +
+        Number(sale.amount);
+
+    if (newAmount > returnedStock) {
+        alert("Недостаточно товара");
+        return;
+    }
+
+    const newTotal =
+        newAmount * Number(sale.price);
+
+    await updateDoc(
+        productRef,
+        {
+            quantity:
+                returnedStock - newAmount
+        }
+    );
+
+    await updateDoc(
+        doc(db, "sales", id),
+        {
+            amount: newAmount,
+            total: newTotal
+        }
+    );
+
+    await loadProductsSelect();
+    loadSales();
 };
 
 window.loadSales = async () => {
@@ -360,15 +506,15 @@ window.loadSales = async () => {
 
     const querySnapshot =
         await getDocs(
-            collection(db,"sales")
+            collection(db, "sales")
         );
 
     const sales = [];
 
-    querySnapshot.forEach((document)=>{
+    querySnapshot.forEach((document) => {
 
         sales.push({
-            id:document.id,
+            id: document.id,
             ...document.data()
         });
 
@@ -376,47 +522,47 @@ window.loadSales = async () => {
 
     sales.reverse();
 
-    sales.forEach((sale)=>{
+    sales.forEach((sale) => {
 
-        revenue += Number(sale.total || 0);
+        revenue +=
+            Number(sale.total || 0);
 
-        if(
+        if (
             search &&
             !sale.product
-            .toLowerCase()
-            .includes(search)
-        ){
+                .toLowerCase()
+                .includes(search)
+        ) {
             return;
         }
 
         table.innerHTML += `
         <tr>
 
-        <td>${sale.product}</td>
-        <td>${sale.amount}</td>
-        <td>${sale.price}</td>
-        <td>${sale.total}</td>
-        <td>${sale.date}</td>
+            <td>${sale.product}</td>
+            <td>${sale.amount}</td>
+            <td>${sale.price}</td>
+            <td>${sale.total}</td>
+            <td>${sale.date}</td>
 
-        <td>
+            <td>
 
-        <button
-        class="edit-btn"
-        onclick='editSale("${sale.id}",${JSON.stringify(sale)})'>
-        Изменить
-        </button>
+                <button
+                class="edit-btn"
+                onclick='editSale("${sale.id}", ${JSON.stringify(sale)})'>
+                Изменить
+                </button>
 
-        <button
-        class="delete-btn"
-        onclick='deleteSale("${sale.id}")'>
-        Удалить
-        </button>
+                <button
+                class="delete-btn"
+                onclick='deleteSale("${sale.id}")'>
+                Удалить
+                </button>
 
-        </td>
+            </td>
 
         </tr>
         `;
-
     });
 
     document.getElementById("salesCount").innerText =
@@ -424,10 +570,21 @@ window.loadSales = async () => {
 
     document.getElementById("revenue").innerText =
         revenue + " ₽";
-
 };
 
-loadSales();
+window.onload = async () => {
+
+    await loadProductsSelect();
+
+    document
+        .getElementById("product")
+        .addEventListener(
+            "change",
+            updateProductInfo
+        );
+
+    loadSales();
+};
 
 </script>
 
