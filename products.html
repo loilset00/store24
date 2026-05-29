@@ -2,19 +2,67 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Store24 - Товары</title>
 
 <style>
+
 body{
-    font-family:Arial;
+    font-family: Arial, sans-serif;
     background:#f4f6f9;
     padding:30px;
+    margin:0;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+    margin-bottom:20px;
+}
+
+h1{
+    margin-top:0;
+}
+
+input{
+    padding:10px;
+    margin:5px;
+    border:1px solid #ccc;
+    border-radius:5px;
 }
 
 button{
     padding:10px 15px;
     margin:5px;
+    border:none;
+    border-radius:5px;
     cursor:pointer;
+    color:white;
+    background:#2563eb;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+.edit-btn{
+    background:#f59e0b;
+}
+
+.back-btn{
+    background:#6b7280;
 }
 
 table{
@@ -26,30 +74,73 @@ table{
 th,td{
     border:1px solid #ddd;
     padding:10px;
+    text-align:left;
 }
 
 th{
     background:#2563eb;
     color:white;
 }
-</style>
 
+</style>
 </head>
 <body>
 
+<div class="container">
+
+<div class="card">
+
 <h1>Товары магазина "24"</h1>
 
-<button onclick="seedData()">
-Заполнить тестовыми данными
+<a href="index.html">
+<button class="back-btn">
+На главную
 </button>
+</a>
+
+</div>
+
+<div class="card">
+
+<h2>Добавление товара</h2>
+
+<input type="text" id="name" placeholder="Название">
+
+<input type="text" id="category" placeholder="Категория">
+
+<input type="text" id="supplier" placeholder="Поставщик">
+
+<input type="number" id="price" placeholder="Цена">
+
+<input type="number" id="quantity" placeholder="Количество">
+
+<button onclick="addProduct()">
+Добавить товар
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Поиск</h2>
+
+<input
+type="text"
+id="search"
+placeholder="Поиск по названию"
+onkeyup="loadProducts()"
+>
 
 <button onclick="loadProducts()">
 Обновить таблицу
 </button>
 
-<br><br>
+</div>
+
+<div class="card">
 
 <table>
+
 <thead>
 <tr>
 <th>Название</th>
@@ -57,6 +148,7 @@ th{
 <th>Поставщик</th>
 <th>Цена</th>
 <th>Количество</th>
+<th>Действия</th>
 </tr>
 </thead>
 
@@ -65,6 +157,10 @@ th{
 </tbody>
 
 </table>
+
+</div>
+
+</div>
 
 <script type="module">
 
@@ -75,7 +171,10 @@ import {
 getFirestore,
 collection,
 addDoc,
-getDocs
+getDocs,
+doc,
+deleteDoc,
+updateDoc
 }
 from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -91,63 +190,96 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window.seedData = async () => {
+window.addProduct = async () => {
 
-    const products = [
+    const name =
+        document.getElementById("name").value;
 
-        {
-            name:"Молоко Простоквашино",
-            category:"Молочная продукция",
-            supplier:"ООО Агро",
-            price:89,
-            quantity:25
-        },
+    const category =
+        document.getElementById("category").value;
 
-        {
-            name:"Хлеб Бородинский",
-            category:"Хлебобулочные изделия",
-            supplier:"Хлебозавод №1",
-            price:45,
-            quantity:30
-        },
+    const supplier =
+        document.getElementById("supplier").value;
 
-        {
-            name:"Сок Добрый",
-            category:"Напитки",
-            supplier:"ООО Мультон",
-            price:120,
-            quantity:18
-        },
+    const price =
+        Number(document.getElementById("price").value);
 
-        {
-            name:"Минеральная вода",
-            category:"Напитки",
-            supplier:"Аква",
-            price:55,
-            quantity:40
-        }
+    const quantity =
+        Number(document.getElementById("quantity").value);
 
-    ];
-
-    for(const product of products){
-
-        await addDoc(
-            collection(db,"products"),
-            product
-        );
-
+    if(!name){
+        alert("Введите название товара");
+        return;
     }
 
-    alert("Тестовые данные добавлены");
+    await addDoc(
+        collection(db,"products"),
+        {
+            name,
+            category,
+            supplier,
+            price,
+            quantity
+        }
+    );
+
+    document.getElementById("name").value = "";
+    document.getElementById("category").value = "";
+    document.getElementById("supplier").value = "";
+    document.getElementById("price").value = "";
+    document.getElementById("quantity").value = "";
+
+    loadProducts();
+
+};
+
+window.deleteProduct = async (id) => {
+
+    if(!confirm("Удалить товар?")){
+        return;
+    }
+
+    await deleteDoc(
+        doc(db,"products",id)
+    );
+
+    loadProducts();
+
+};
+
+window.editProduct = async (id,currentName) => {
+
+    const newName =
+        prompt(
+            "Новое название товара",
+            currentName
+        );
+
+    if(!newName){
+        return;
+    }
+
+    await updateDoc(
+        doc(db,"products",id),
+        {
+            name:newName
+        }
+    );
+
+    loadProducts();
 
 };
 
 window.loadProducts = async () => {
 
     const table =
-        document.getElementById(
-            "productsTable"
-        );
+        document.getElementById("productsTable");
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase();
 
     table.innerHTML = "";
 
@@ -156,20 +288,44 @@ window.loadProducts = async () => {
             collection(db,"products")
         );
 
-    querySnapshot.forEach((doc)=>{
+    querySnapshot.forEach((document)=>{
 
-        const p = doc.data();
+        const p = document.data();
+
+        if(
+            search &&
+            !p.name.toLowerCase().includes(search)
+        ){
+            return;
+        }
 
         table.innerHTML += `
         <tr>
+
             <td>${p.name}</td>
             <td>${p.category}</td>
             <td>${p.supplier}</td>
             <td>${p.price}</td>
             <td>${p.quantity}</td>
+
+            <td>
+
+                <button
+                class="edit-btn"
+                onclick="editProduct('${document.id}','${p.name}')">
+                Изменить
+                </button>
+
+                <button
+                class="delete-btn"
+                onclick="deleteProduct('${document.id}')">
+                Удалить
+                </button>
+
+            </td>
+
         </tr>
         `;
-
     });
 
 };

@@ -38,6 +38,12 @@ button {
     cursor: pointer;
 }
 
+input{
+    padding:10px;
+    margin:5px;
+    width:220px;
+}
+
 button:hover {
     background: #1d4ed8;
 }
