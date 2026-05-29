@@ -12,6 +12,13 @@
     box-sizing:border-box;
 }
 
+select{
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    margin:5px;
+}
+
 body{
     font-family:Arial,sans-serif;
     background:#f4f6f9;
@@ -170,17 +177,9 @@ th{
 
 <h2>Добавить поступление</h2>
 
-<input
-type="text"
-id="product"
-placeholder="Товар"
->
+<select id="product"></select>
 
-<input
-type="text"
-id="supplier"
-placeholder="Поставщик"
->
+<select id="supplier"></select>
 
 <input
 type="number"
@@ -252,7 +251,8 @@ addDoc,
 getDocs,
 doc,
 deleteDoc,
-updateDoc
+updateDoc,
+getDoc
 }
 from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -268,9 +268,76 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let products = [];
+let suppliers = [];
+
+async function loadProductsSelect(){
+
+    const select =
+        document.getElementById("product");
+
+    select.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"products")
+        );
+
+    products = [];
+
+    querySnapshot.forEach((document)=>{
+
+        const product = {
+            id:document.id,
+            ...document.data()
+        };
+
+        products.push(product);
+
+        select.innerHTML += `
+            <option value="${document.id}">
+                ${product.name}
+            </option>
+        `;
+    });
+
+}
+
+async function loadSuppliersSelect(){
+
+    const select =
+        document.getElementById("supplier");
+
+    select.innerHTML = "";
+
+    const querySnapshot =
+        await getDocs(
+            collection(db,"suppliers")
+        );
+
+    suppliers = [];
+
+    querySnapshot.forEach((document)=>{
+
+        const supplier = {
+            id:document.id,
+            ...document.data()
+        };
+
+        suppliers.push(supplier);
+
+        select.innerHTML += `
+            <option value="${supplier.name}">
+                ${supplier.name}
+            </option>
+        `;
+    });
+
+}
+
 window.addReceipt = async () => {
 
-    const product =
+    const productId =
         document.getElementById("product").value;
 
     const supplier =
@@ -284,13 +351,33 @@ window.addReceipt = async () => {
     const date =
         document.getElementById("receiptDate").value;
 
+    const product =
+        products.find(
+            p => p.id === productId
+        );
+
+    if(!product){
+        alert("Товар не найден");
+        return;
+    }
+
     await addDoc(
         collection(db,"receipts"),
         {
-            product,
+            productId,
+            product:product.name,
             supplier,
             quantity,
             date
+        }
+    );
+
+    await updateDoc(
+        doc(db,"products",productId),
+        {
+            quantity:
+                Number(product.quantity) +
+                Number(quantity)
         }
     );
 
